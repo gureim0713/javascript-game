@@ -1,0 +1,184 @@
+<!doctype html>   
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+    <title>zombie</title>
+	<style>
+	*{margin:0px;}
+	#stage{
+		width:100%;
+		height:650px;
+		background:url("./bg.jpg");
+		position:relative;
+		overflow:hidden;
+	}
+	#info{
+		width:30%;
+		height:80px;
+		background:skyblue;
+		float:left;
+		text-align:left;
+		color:blue;
+		font-weight:bold;
+		line-height:80px;
+	}
+	#heart_area{
+		width:70%;
+		height:80px;
+		position:relative;
+		background:skyblue;
+		float:left;
+	}
+	#gameOverImg{
+		width:800px;
+		height:500px;
+		background:url("./gameOver.png");
+		background-size:100% 100%;
+		display:none;
+		margin:auto;
+	}
+	</style>
+	<script src="./GameObject.js"></script>
+	<script src="./Hero.js"></script>
+	<script src="./Zombie.js"></script>
+	<script src="./Heart.js"></script>
+	<script src="./common.js"></script>
+	<script src="./Vaccine.js"></script>
+	<script src="./Bomb.js"></script>
+	<script src="./Manager.js"></script>
+	<script src="./Bullet.js"></script>
+	
+	<script>
+	// alert(screen.width);  1920. 화면의 너비
+	var stage;
+	var bgX=0;
+	var hero;
+	var info;
+	var heart_area;
+	var manager;
+	var st; // gameLoop()의 setTimeout을 멈추기 위한 변수
+	var gameOverImg;
+	var countVaccine=0;
+	var countBomb=1;
+	function init(){
+		stage= document.getElementById("stage");
+		info= document.getElementById("info");
+		heart_area= document.getElementById("heart_area");
+		manager = new Manager();
+		
+		createHero();
+		createZombie();
+		createHeart();
+		createVaccine();
+		createBomb();
+		showInfo();
+		gameLoop();
+	}
+	function showInfo(){
+	// 보유하고 있는 백신과 폭탄의 갯수 보여주기
+		info.innerHTML="백신 갯수:   "+countVaccine+",   폭탄 갯수:   "+countBomb;
+	}
+	function moveBg(){
+	// 배경 움직이기
+		bgX--;
+		stage.style.backgroundPosition=bgX+"px 0px";
+	}
+	function createHero(){
+	// 주인공 생성하기
+		hero = new Hero("HERO",stage,70,90,100,500,0,0,"./hero.png");
+		manager.addObject(hero);
+	}
+	function createZombie(){
+	// 좀비 생성하기. 3초마다 하나씩 랜덤으로 나오게 하기
+		var zombie = new Zombie("ZOMBIE",stage,70,90,screen.width,getRandomByRange(400, 550),-1,getRandomByRange(-1,2),"./z"+(getRandom(5)+1)+".png");
+		manager.addObject(zombie);
+		setTimeout("createZombie()",3000);
+	}
+	function createHeart(){
+	// 목숨 만들기
+		for(var i=0;i<2;i++){
+			var heart = new Heart("HEART",heart_area,50,50,(i*70),10,0,0,"./heart.png");
+			heart.img.style.float="left";
+			manager.addObject(heart);
+			console.log("만들어지고 있어요, "+i);
+		}
+	}
+	function createVaccine(){
+	// 포션 생성하기. 색깔은 두가지. 성능에 차이는 없음. 백신 던져서 맞으면 무해한 꽃으로 변한다.
+		var vaccine = new Vaccine("VACCINE",stage,50,50,screen.width,getRandomByRange(400, 550),-1,0,"./vaccine"+(getRandom(2)+1)+".png");
+		manager.addObject(vaccine);
+		setTimeout("createVaccine()",7000);
+	}
+	function createBomb(){
+	// 폭탄 만들기. 폭탄을 던져서 맞으면 소멸한다.
+		var bomb = new Bomb("BOMB",stage,50,50,screen.width,getRandomByRange(400, 550),-1,0,"./bomb.png");
+		manager.addObject(bomb);
+		setTimeout("createBomb()",11000);
+	}
+	function gameOver(){
+	//  좀비와 닿아서 죽으면 게임오버 화면 띄우기
+		gameOverImg=document.getElementById("gameOverImg");
+		gameOverImg.style.display="block";
+		clearTimeout(st);
+
+		setTimeout("gameOver()",8);
+	}
+	function vaccineDrop(){
+		if(countVaccine>0){
+			countVaccine--;
+			var item_vaccine = new Bullet("item_VACCINE",stage,50,50,hero.x,hero.y,8,0,"./vaccine"+(getRandom(2)+1)+".png");
+			manager.addObject(item_vaccine);
+			showInfo();
+		}
+	}
+	function bombDrop(){
+			if(countBomb>0){
+				countBomb--;
+				var item_bomb = new Bullet("item_BOMB",stage,50,50,hero.x,hero.y,8,0,"./bomb.png");
+				manager.addObject(item_bomb);
+				showInfo();
+		}
+	}
+	function moveHero(){
+	// 히어로 액션과 관련된 동작
+		var key= event.keyCode;
+		//alert(key);
+		switch(key){
+			case 37: hero.velX=-5; break;
+			case 39: hero.velX= 5; break;
+			case 38: hero.velY=-5; break;
+			case 40: hero.velY= 5; break;
+			case 32: vaccineDrop(); break;
+			case 66: bombDrop(); break;
+			case 18: alert(); break;
+		}
+	}
+	function stop(){
+	// 히어로 액션 멈추기
+		if(event.keyCode ==37 || event.keyCode ==39){
+				hero.velX=0;
+			}
+			if(event.keyCode ==38 || event.keyCode ==40){
+				hero.velY=0;
+			}
+	}
+	function gameLoop(){
+		moveBg();
+		manager.tick();
+		manager.render();
+		
+		st= setTimeout("gameLoop()",10);
+	}
+	window.addEventListener("load", function(){
+		init();
+	});
+	</script>
+ </head>
+ <body onKeyDown="moveHero()" onKeyUp="stop()">
+  <div id="stage">
+	<div id="gameOverImg"></div>
+  </div>
+  <div id="info"></div>
+  <div id="heart_area"></div>
+ </body>
+</html>
